@@ -42,36 +42,36 @@ export function AuthForm({ mode }: AuthFormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {mode === 'sign-up' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-            placeholder="Your name"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
+            placeholder="your name"
           />
         </div>
       )}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
           placeholder="you@example.com"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
           placeholder="••••••••"
         />
       </div>
@@ -83,10 +83,9 @@ export function AuthForm({ mode }: AuthFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 rounded-2xl font-semibold text-sm text-white transition-all duration-200 active:scale-95 hover:opacity-90 disabled:opacity-50 mt-1"
-        style={{ backgroundColor: '#007AFF' }}
+        className="w-full py-2.5 rounded-lg font-semibold text-sm text-white bg-black hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50 mt-2"
       >
-        {loading ? 'Loading...' : mode === 'sign-in' ? 'Sign In' : 'Create Account'}
+        {loading ? 'loading...' : mode === 'sign-in' ? 'sign in' : 'create account'}
       </button>
     </form>
   )

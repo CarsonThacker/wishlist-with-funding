@@ -41,9 +41,9 @@ export function WishlistCard({ item }: WishlistCardProps) {
           </div>
         )}
         {isComplete && (
-          <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
-            <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-              Fully Funded!
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+            <div className="bg-black text-white px-3 py-1 rounded-full text-xs font-semibold">
+              fully funded
             </div>
           </div>
         )}
@@ -108,13 +108,9 @@ export function WishlistCard({ item }: WishlistCardProps) {
         {!isComplete && (
           <div>
             {showFund ? (
-              <div
-                className="rounded-2xl p-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                style={{ backgroundColor: '#F0F8FF' }}
-              >
-                <p className="text-xs text-gray-500 mb-2 font-medium">
-                  Help Carson fund this! Send via Venmo:
-                  <span className="font-bold text-gray-800 ml-1">@carsonthacker</span>
+              <div className="rounded-2xl p-3 bg-gray-50">
+                <p className="text-xs text-gray-600 mb-2 font-medium">
+                  send via venmo: <span className="font-semibold">@carsonthacker</span>
                 </p>
                 <VenmoButton itemName={item.name} suggestedAmount={Math.ceil(remaining / 4)} />
               </div>

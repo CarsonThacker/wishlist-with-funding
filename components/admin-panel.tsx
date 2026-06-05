@@ -72,11 +72,8 @@ function AdminItemCard({
 
   if (editing) {
     return (
-      <div
-        className="bg-white rounded-3xl p-5 animate-in fade-in duration-200"
-        style={{ boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}
-      >
-        <h3 className="font-semibold text-gray-900 mb-4">Edit Item</h3>
+      <div className="bg-white rounded-lg p-5 border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-4">edit item</h3>
         <div className="flex flex-col gap-3">
           {[
             { label: 'Name', key: 'name', placeholder: 'AirPods Pro', type: 'text' },
@@ -101,16 +98,15 @@ function AdminItemCard({
           <button
             onClick={handleUpdate}
             disabled={isPending}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
-            style={{ backgroundColor: '#007AFF' }}
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-black hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50"
           >
-            Save
+            save
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 transition-all active:scale-95"
+            className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 transition-all"
           >
-            Cancel
+            cancel
           </button>
         </div>
       </div>
@@ -118,10 +114,7 @@ function AdminItemCard({
   }
 
   return (
-    <div
-      className="bg-white rounded-3xl overflow-hidden transition-all duration-300"
-      style={{ boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}
-    >
+    <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
       <div className="flex items-center gap-4 p-4">
         {/* Thumbnail */}
         <div className="w-16 h-16 rounded-2xl bg-gray-50 overflow-hidden flex-shrink-0">
@@ -152,39 +145,38 @@ function AdminItemCard({
           type="number"
           value={savingsAmount}
           onChange={(e) => setSavingsAmount(e.target.value)}
-          placeholder="Add $"
+          placeholder="add $"
           min="0"
           step="0.01"
-          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
         />
         <button
           onClick={handleAddSavings}
           disabled={isPending || !savingsAmount}
-          className="px-3 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
-          style={{ backgroundColor: '#34C759' }}
+          className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-black hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-40"
         >
-          + Save
+          save
         </button>
         <button
           onClick={() => setEditing(true)}
-          className="px-3 py-2 rounded-xl text-sm font-medium text-gray-500 bg-gray-100 transition-all active:scale-95 hover:bg-gray-200"
+          className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 transition-all"
         >
-          Edit
+          edit
         </button>
         {showDelete ? (
           <button
             onClick={handleDelete}
             disabled={isPending}
-            className="px-3 py-2 rounded-xl text-sm font-semibold text-white bg-red-500 transition-all active:scale-95 disabled:opacity-50"
+            className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50"
           >
-            Sure?
+            sure?
           </button>
         ) : (
           <button
             onClick={() => setShowDelete(true)}
-            className="px-3 py-2 rounded-xl text-sm font-medium text-red-400 bg-red-50 transition-all active:scale-95 hover:bg-red-100"
+            className="px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:text-red-700 transition-all"
           >
-            Del
+            delete
           </button>
         )}
       </div>
@@ -238,24 +230,21 @@ export function AdminPanel({ initialItems }: AdminPanelProps) {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10" style={{ backdropFilter: 'blur(20px)' }}>
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
-            <p className="text-xs text-gray-400">{"Carson's Wishlist"}</p>
-          </div>
+          <h1 className="font-bold text-gray-900">manage wishlist</h1>
           <div className="flex items-center gap-2">
             <a
               href="/"
-              className="px-3 py-1.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-all"
+              className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition-all"
             >
-              View Site
+              view site
             </a>
             <button
               onClick={handleSignOut}
-              className="px-3 py-1.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 transition-all"
+              className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition-all"
             >
-              Sign Out
+              sign out
             </button>
           </div>
         </div>
@@ -267,20 +256,13 @@ export function AdminPanel({ initialItems }: AdminPanelProps) {
           {!showAdd ? (
             <button
               onClick={() => setShowAdd(true)}
-              className="w-full py-3.5 rounded-3xl font-semibold text-sm text-white transition-all duration-200 active:scale-95 hover:opacity-90 flex items-center justify-center gap-2"
-              style={{ backgroundColor: '#007AFF' }}
+              className="w-full py-3 rounded-lg font-semibold text-sm text-white bg-black hover:bg-gray-800 transition-all active:scale-95"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Wishlist Item
+              add item
             </button>
           ) : (
-            <div
-              className="bg-white rounded-3xl p-5 animate-in fade-in slide-in-from-top-2 duration-300"
-              style={{ boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}
-            >
-              <h2 className="font-bold text-gray-900 mb-4">New Item</h2>
+            <div className="bg-white rounded-lg p-5 border border-gray-200">
+              <h2 className="font-bold text-gray-900 mb-4">new item</h2>
               <div className="flex flex-col gap-3">
                 {[
                   { label: 'Name *', key: 'name', placeholder: 'AirPods Pro', type: 'text' },
@@ -310,16 +292,15 @@ export function AdminPanel({ initialItems }: AdminPanelProps) {
                 <button
                   onClick={handleAdd}
                   disabled={isPending}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
-                  style={{ backgroundColor: '#007AFF' }}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-black hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {isPending ? 'Adding...' : 'Add Item'}
+                  {isPending ? 'adding...' : 'add'}
                 </button>
                 <button
                   onClick={() => { setShowAdd(false); setError('') }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 transition-all active:scale-95"
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 transition-all"
                 >
-                  Cancel
+                  cancel
                 </button>
               </div>
             </div>
@@ -336,9 +317,6 @@ export function AdminPanel({ initialItems }: AdminPanelProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-              {initialItems.length} {initialItems.length === 1 ? 'item' : 'items'}
-            </p>
             {initialItems.map((item) => (
               <AdminItemCard key={item.id} item={item} onRefresh={handleRefresh} />
             ))}
