@@ -1,12 +1,13 @@
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getWishlistItems } from '@/app/actions/wishlist'
 import { AdminPanel } from '@/components/admin-panel'
 
 export default async function AdminPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) redirect('/sign-in')
+  const cookieStore = await cookies()
+  if (cookieStore.get('logged_in')?.value !== 'true') {
+    redirect('/sign-in')
+  }
 
   const items = await getWishlistItems()
 

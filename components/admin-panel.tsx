@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { logoutAction } from '@/app/actions/login'
 import {
   addWishlistItem,
   updateWishlistItem,
@@ -222,8 +222,8 @@ export function AdminPanel({ initialItems }: AdminPanelProps) {
   }
 
   async function handleSignOut() {
-    await authClient.signOut()
-    router.push('/')
+    await logoutAction()
+    router.push('/sign-in')
     router.refresh()
   }
 
