@@ -18,7 +18,7 @@ function GiftCard({ item, showMoney = true }: { item: Item; showMoney?: boolean 
       {item.image_url ? <img src={item.image_url} alt={item.name} className="aspect-[4/3] w-full object-cover" /> : <div className="flex aspect-[4/3] items-center justify-center bg-gray-50 text-sm text-gray-400">no image</div>}
       <div className="p-4">
         <h3 className="font-medium text-gray-900">{item.url ? <a className="underline-offset-4 hover:underline" href={item.url} target="_blank" rel="noreferrer">{item.name}</a> : item.name}</h3>
-        {item.description && <p className="mt-1 line-clamp-2 text-sm text-gray-500">{item.description}</p>}
+        {item.description && <p className="mt-1 line-clamp-4 whitespace-pre-line text-sm text-gray-500">{item.description}</p>}
         {showMoney && <>
           <div className="mt-4 flex items-center justify-between text-sm"><span className="text-gray-600">${saved.toFixed(2)} saved</span><span className="font-medium text-gray-900">${price.toFixed(2)}</span></div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label={`${item.name} savings`} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
@@ -124,9 +124,21 @@ export function ManageList({ list, token }: { list: List; token: string }) {
     setError('')
     const form = new FormData(event.currentTarget)
     startTransition(async () => {
+      const itemDescription = String(form.get('description') ?? '').trim()
+      const options = [
+        ['Size', String(form.get('size') ?? '').trim()],
+        ['Color', String(form.get('color') ?? '').trim()],
+        ['Other details', String(form.get('otherDetails') ?? '').trim()],
+      ].filter(([, value]) => value)
+      const optionLines = options.map(([label, value]) => `${label}: ${value}`)
+      const optionLength = optionLines.join('\n').length
+      const description = [
+        itemDescription.slice(0, Math.max(0, 500 - optionLength - (optionLines.length ? 1 : 0))),
+        ...optionLines,
+      ].filter(Boolean).join('\n')
       const result = await addWishlistListItem(token, {
         name: String(form.get('name') ?? ''),
-        description: String(form.get('description') ?? ''),
+        description,
         price: Number(form.get('price')),
         imageUrl: String(form.get('imageUrl') ?? ''),
         url: String(form.get('url') ?? ''),
@@ -164,12 +176,16 @@ export function ManageList({ list, token }: { list: List; token: string }) {
       {!list.adminPasswordConfigured && <SetAdminPasswordForm token={token} />}
       {formOpen && <form onSubmit={addItem} className="grid gap-3 rounded-xl border border-gray-200 p-4 sm:grid-cols-2">
         <label className="text-sm text-gray-700 sm:col-span-2">product page URL<input name="url" type="url" value={productUrl} onChange={(event) => setProductUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://any-store.com/product/..." /></label>
-        <button type="button" onClick={() => void fetchProductDetails()} disabled={isFetchingProduct || !productUrl.trim()} className="min-h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-800 disabled:opacity-50 sm:col-span-2">{isFetchingProduct ? 'fetching product with Groq AI...' : 'fetch product details with Groq AI'}</button>
+        <button type="button" onClick={() => void fetchProductDetails()} disabled={isFetchingProduct || !productUrl.trim()} className="min-h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-800 disabled:opacity-50 sm:col-span-2">{isFetchingProduct ? 'fetching product details...' : 'fetch product details'}</button>
         {productMessage && <p role="status" className="text-sm text-gray-500 sm:col-span-2">{productMessage}</p>}
         <label className="text-sm text-gray-700">item name<input required name="name" value={itemName} onChange={(event) => setItemName(event.target.value)} maxLength={120} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
         {list.list_type === 'wishlist' && <label className="text-sm text-gray-700">price<input required name="price" value={itemPrice} onChange={(event) => setItemPrice(event.target.value)} type="number" min="0" step="0.01" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>}
-        <label className="text-sm text-gray-700 sm:col-span-2">description<input name="description" value={itemDescription} onChange={(event) => setItemDescription(event.target.value)} maxLength={500} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
+        <label className="text-sm text-gray-700 sm:col-span-2">description<textarea name="description" value={itemDescription} onChange={(event) => setItemDescription(event.target.value)} maxLength={500} rows={3} className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 text-base" /></label>
+        <label className="text-sm text-gray-700">size<input name="size" maxLength={50} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="e.g. medium, 8.5" /></label>
+        <label className="text-sm text-gray-700">color<input name="color" maxLength={50} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="e.g. navy blue" /></label>
+        <label className="text-sm text-gray-700 sm:col-span-2">other details<input name="otherDetails" maxLength={200} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="style, model, preferences, or anything else" /></label>
         <label className="text-sm text-gray-700 sm:col-span-2">image URL<input name="imageUrl" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://" /></label>
+        {imageUrl && <div className="sm:col-span-2"><img src={imageUrl} alt={`${itemName || 'Product'} thumbnail preview`} className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain" /></div>}
         {error && <p role="alert" className="text-sm text-red-600 sm:col-span-2">{error}</p>}
         <button disabled={isPending || isFetchingProduct} className="min-h-11 rounded-lg bg-black px-4 text-sm font-medium text-white disabled:opacity-50 sm:col-span-2">{isPending ? 'adding...' : 'add item'}</button>
       </form>}
