@@ -3,12 +3,13 @@
 import { useState, useTransition } from 'react'
 import { LockKeyhole } from 'lucide-react'
 import { addWishlistListItem, claimWishlistItem, deleteWishlistListItem, updateWishlistListItem } from '@/app/actions/lists'
+import { SetAdminPasswordForm } from '@/components/set-admin-password-form'
 
 type Item = { id: string; name: string; description: string | null; price: number; saved: number; image_url: string | null; url: string | null; claimed_by?: string | null }
 type ProductPreview = { title?: string; description?: string; price?: number | null; imageUrl?: string }
-type List = { slug: string; title: string; list_type: string; owner_name: string; items: Item[] }
+type List = { slug: string; title: string; list_type: string; owner_name: string; adminPasswordConfigured?: boolean; items: Item[] }
 
-function GiftCard({ item }: { item: Item }) {
+function GiftCard({ item, showMoney = true }: { item: Item; showMoney?: boolean }) {
   const price = Number(item.price)
   const saved = Number(item.saved)
   const percent = price > 0 ? Math.min(Math.round((saved / price) * 100), 100) : 0
@@ -18,10 +19,12 @@ function GiftCard({ item }: { item: Item }) {
       <div className="p-4">
         <h3 className="font-medium text-gray-900">{item.url ? <a className="underline-offset-4 hover:underline" href={item.url} target="_blank" rel="noreferrer">{item.name}</a> : item.name}</h3>
         {item.description && <p className="mt-1 line-clamp-2 text-sm text-gray-500">{item.description}</p>}
-        <div className="mt-4 flex items-center justify-between text-sm"><span className="text-gray-600">${saved.toFixed(2)} saved</span><span className="font-medium text-gray-900">${price.toFixed(2)}</span></div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label={`${item.name} savings`} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-          <div className={`h-full rounded-full ${percent <= 20 ? 'bg-red-500' : percent <= 50 ? 'bg-orange-500' : percent <= 80 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }} />
-        </div>
+        {showMoney && <>
+          <div className="mt-4 flex items-center justify-between text-sm"><span className="text-gray-600">${saved.toFixed(2)} saved</span><span className="font-medium text-gray-900">${price.toFixed(2)}</span></div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label={`${item.name} savings`} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+            <div className={`h-full rounded-full ${percent <= 20 ? 'bg-red-500' : percent <= 50 ? 'bg-orange-500' : percent <= 80 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }} />
+          </div>
+        </>}
       </div>
     </article>
   )
@@ -66,7 +69,7 @@ export function PublicListItems({ list }: { list: List }) {
         const claimed = Boolean(item.claimed_by || claimedHere.includes(item.id) || claimedByOthers[item.id])
         const claimedByMe = claimedHere.includes(item.id)
         return <div key={item.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <GiftCard item={item} />
+          <GiftCard item={item} showMoney={list.list_type === 'wishlist'} />
           {supportsClaims && <div className="border-t border-gray-100 p-3">
             {claimed ? <div className="flex min-h-11 items-center gap-2 rounded-lg bg-gray-50 px-3 text-sm font-medium text-gray-700"><LockKeyhole aria-hidden="true" className="size-4" />{claimedByMe ? 'marked as bought by you' : `claimed by ${item.claimed_by || claimedByOthers[item.id] || 'someone'}`}</div> : <button onClick={() => claim(item)} disabled={isPending} className="min-h-11 w-full rounded-lg bg-black px-4 text-sm font-medium text-white disabled:opacity-50">{isPending ? 'saving...' : 'i bought this'}</button>}
             {claimedByMe && item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-2 flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-700">open product</a>}
@@ -158,12 +161,13 @@ export function ManageList({ list, token }: { list: List; token: string }) {
         <div><h1 className="text-2xl font-semibold text-gray-900">{list.title}</h1><p className="mt-1 text-sm text-gray-500">list admin</p></div>
         <button onClick={() => setFormOpen((open) => !open)} className="min-h-11 rounded-lg bg-black px-4 text-sm font-medium text-white hover:bg-gray-800">{formOpen ? 'cancel' : 'add item'}</button>
       </div>
+      {!list.adminPasswordConfigured && <SetAdminPasswordForm token={token} />}
       {formOpen && <form onSubmit={addItem} className="grid gap-3 rounded-xl border border-gray-200 p-4 sm:grid-cols-2">
         <label className="text-sm text-gray-700 sm:col-span-2">amazon or ebay product URL<input name="url" type="url" value={productUrl} onChange={(event) => setProductUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://www.amazon.com/..." /></label>
         <button type="button" onClick={() => void fetchProductDetails()} disabled={isFetchingProduct || !productUrl.trim()} className="min-h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-800 disabled:opacity-50 sm:col-span-2">{isFetchingProduct ? 'fetching details...' : 'fetch product details'}</button>
         {productMessage && <p role="status" className="text-sm text-gray-500 sm:col-span-2">{productMessage}</p>}
         <label className="text-sm text-gray-700">item name<input required name="name" value={itemName} onChange={(event) => setItemName(event.target.value)} maxLength={120} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
-        <label className="text-sm text-gray-700">price<input required name="price" value={itemPrice} onChange={(event) => setItemPrice(event.target.value)} type="number" min="0" step="0.01" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
+        {list.list_type === 'wishlist' && <label className="text-sm text-gray-700">price<input required name="price" value={itemPrice} onChange={(event) => setItemPrice(event.target.value)} type="number" min="0" step="0.01" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>}
         <label className="text-sm text-gray-700 sm:col-span-2">description<input name="description" value={itemDescription} onChange={(event) => setItemDescription(event.target.value)} maxLength={500} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
         <label className="text-sm text-gray-700 sm:col-span-2">image URL<input name="imageUrl" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://" /></label>
         {error && <p role="alert" className="text-sm text-red-600 sm:col-span-2">{error}</p>}
@@ -172,12 +176,12 @@ export function ManageList({ list, token }: { list: List; token: string }) {
       {error && !formOpen && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {!list.items.length ? <p className="rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500">your list is empty</p> : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {list.items.map((item) => <div key={item.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <GiftCard item={item} />
-          <form onSubmit={(event) => saveAmount(event, item)} className="flex items-end gap-2 border-t border-gray-100 p-3">
+          <GiftCard item={item} showMoney={list.list_type === 'wishlist'} />
+          {list.list_type === 'wishlist' ? <form onSubmit={(event) => saveAmount(event, item)} className="flex items-end gap-2 border-t border-gray-100 p-3">
             <label className="flex-1 text-xs text-gray-500">amount saved<input name="saved" type="number" min="0" max={item.price} step="0.01" defaultValue={item.saved} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base text-gray-900" /></label>
             <button disabled={isPending} className="min-h-11 rounded-lg bg-black px-3 text-sm text-white disabled:opacity-50">save</button>
             <button type="button" disabled={isPending} onClick={() => deleteItem(item)} className="min-h-11 rounded-lg border border-gray-200 px-3 text-sm text-gray-700">delete</button>
-          </form>
+          </form> : <div className="border-t border-gray-100 p-3"><button type="button" disabled={isPending} onClick={() => deleteItem(item)} className="min-h-11 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700">remove item</button></div>}
         </div>)}
       </div>}
     </div>

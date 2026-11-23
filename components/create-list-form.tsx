@@ -9,7 +9,9 @@ export function CreateListForm() {
   const [ownerName, setOwnerName] = useState('')
   const [listKind, setListKind] = useState<ListKind>('wishlist')
   const [title, setTitle] = useState('')
-  const [links, setLinks] = useState<{ share: string; admin: string } | null>(null)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('')
+  const [links, setLinks] = useState<{ share: string; admin: string; passwordAdmin: string } | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -30,8 +32,12 @@ export function CreateListForm() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
+    if (adminPassword !== confirmAdminPassword) {
+      setError('The admin passwords do not match.')
+      return
+    }
     startTransition(async () => {
-      const result = await createWishlistList({ ownerName, listKind, title, accessCode })
+      const result = await createWishlistList({ ownerName, listKind, title, accessCode, adminPassword })
       if (result.error || !result.slug || !result.adminToken) {
         setError(result.error ?? 'Could not create your list.')
         return
@@ -40,6 +46,7 @@ export function CreateListForm() {
       setLinks({
         share: `${base}/list/${result.slug}`,
         admin: `${base}/manage/${result.adminToken}`,
+        passwordAdmin: `${base}/manage/${result.slug}`,
       })
     })
   }
@@ -88,6 +95,15 @@ export function CreateListForm() {
             <label htmlFor="list-title" className="mb-1.5 block text-sm text-gray-700">list title <span className="text-gray-400">optional</span></label>
             <input id="list-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} className="min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base outline-none focus:border-gray-500" placeholder="leave blank for a default title" />
           </div>
+          <div>
+            <label htmlFor="admin-password" className="mb-1.5 block text-sm text-gray-700">admin password</label>
+            <input id="admin-password" type="password" autoComplete="new-password" value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} minLength={12} maxLength={128} required className="min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base outline-none focus:border-gray-500" />
+            <p className="mt-1 text-xs text-gray-500">Use at least 12 characters. You&apos;ll enter this password whenever you want to edit the list.</p>
+          </div>
+          <div>
+            <label htmlFor="confirm-admin-password" className="mb-1.5 block text-sm text-gray-700">confirm admin password</label>
+            <input id="confirm-admin-password" type="password" autoComplete="new-password" value={confirmAdminPassword} onChange={(event) => setConfirmAdminPassword(event.target.value)} minLength={12} maxLength={128} required className="min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base outline-none focus:border-gray-500" />
+          </div>
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button type="submit" disabled={isPending} className="min-h-11 w-full rounded-lg bg-black px-4 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50">{isPending ? 'creating...' : 'create list'}</button>
         </form>
@@ -99,10 +115,15 @@ export function CreateListForm() {
             <button onClick={copyShareLink} className="mt-3 min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-900">{copied ? 'copied' : 'copy share link'}</button>
           </div>
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-medium text-gray-900">private edit link</p>
-            <p className="mt-1 text-sm text-gray-600">save this link somewhere private. anyone with it can edit your list.</p>
-            <a href={links.admin} className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-black px-4 text-sm font-medium text-white">open list admin</a>
+            <p className="text-sm font-medium text-gray-900">edit your list with your password</p>
+            <p className="mt-1 text-sm text-gray-600">You can open your shared list and tap &apos;edit this list&apos; whenever you need to make changes.</p>
+            <a href={links.passwordAdmin} className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-black px-4 text-sm font-medium text-white">enter admin password</a>
           </div>
+          <details className="rounded-lg border border-gray-200 p-4">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-medium text-gray-700">show private backup edit link</summary>
+            <p className="mt-2 text-sm text-gray-600">Keep this private link safe; anyone with it can edit your list without the password.</p>
+            <a href={links.admin} className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-900">open backup edit link</a>
+          </details>
         </div>
       )}
     </section>
