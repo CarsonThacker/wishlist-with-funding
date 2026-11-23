@@ -6,6 +6,12 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 
 export type ListKind = 'wishlist' | 'birthday' | 'christmas'
 
+const EARLY_ACCESS_CODE = 'supawishlistapp'
+
+export async function verifyEarlyAccessCode(code: string) {
+  return typeof code === 'string' && code.trim() === EARLY_ACCESS_CODE
+}
+
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
 const cleanText = (value: unknown, max = 160) =>
   typeof value === 'string' ? value.trim().slice(0, max) : ''
@@ -24,7 +30,11 @@ export async function createWishlistList(formData: {
   ownerName: string
   listKind: ListKind
   title?: string
+  accessCode: string
 }) {
+  if (!(await verifyEarlyAccessCode(formData.accessCode))) {
+    return { error: 'That early access code is not valid.' }
+  }
   const ownerName = cleanText(formData.ownerName, 60)
   const listKind = formData.listKind
   if (!ownerName || !['wishlist', 'birthday', 'christmas'].includes(listKind)) {
@@ -76,12 +86,12 @@ export async function getWishlistList(slug: string) {
   if (error || !list) return null
   const { data: items, error: itemError } = await supabase
     .from('wishlist_list_items')
-    .select('id, name, description, price, saved, image_url, url')
+    .select('id, name, description, price, saved, image_url, url, buyer_name')
     .eq('list_id', list.id)
     .order('created_at', { ascending: false })
 
   if (itemError) return null
-  return { ...list, items: items ?? [] }
+  return { ...list, items: (items ?? []).map(({ buyer_name, ...item }) => ({ ...item, claimed_by: buyer_name })) }
 }
 
 async function getManagedList(token: string) {
@@ -162,6 +172,42 @@ export async function updateWishlistListItem(token: string, itemId: string, save
   if (error) return { error: 'Could not update the saved amount.' }
   revalidatePath(`/list/${list.slug}`)
   revalidatePath(`/manage/${token}`)
+  return { success: true }
+}
+
+export async function claimWishlistItem(slug: string, itemId: string, buyerName: string) {
+  const name = cleanText(buyerName, 60)
+  if (!name || !itemId || !slug) return { error: 'Enter your name to claim this gift.' }
+  const supabase = createSupabaseAdmin()
+  const { data: list } = await supabase
+    .from('wishlist_lists')
+    .select('id, list_type')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!list || !['birthday', 'christmas'].includes(list.list_type)) {
+    return { error: 'This list does not support gift claims.' }
+  }
+
+  const { data: claimed, error } = await supabase
+    .from('wishlist_list_items')
+    .update({ buyer_name: name })
+    .eq('id', itemId)
+    .eq('list_id', list.id)
+    .is('buyer_name', null)
+    .select('id')
+    .maybeSingle()
+
+  if (error) return { error: 'Could not reserve this gift. Please try again.' }
+  if (!claimed) {
+    const { data: current } = await supabase
+      .from('wishlist_list_items')
+      .select('buyer_name')
+      .eq('id', itemId)
+      .eq('list_id', list.id)
+      .maybeSingle()
+    return { error: 'This gift was just reserved by someone else.', claimedBy: current?.buyer_name ?? 'someone' }
+  }
+  revalidatePath(`/list/${slug}`)
   return { success: true }
 }
 

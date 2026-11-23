@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { addWishlistListItem, deleteWishlistListItem, updateWishlistListItem } from '@/app/actions/lists'
+import { LockKeyhole } from 'lucide-react'
+import { addWishlistListItem, claimWishlistItem, deleteWishlistListItem, updateWishlistListItem } from '@/app/actions/lists'
 
-type Item = { id: string; name: string; description: string | null; price: number; saved: number; image_url: string | null; url: string | null }
+type Item = { id: string; name: string; description: string | null; price: number; saved: number; image_url: string | null; url: string | null; claimed_by?: string | null }
+type ProductPreview = { title?: string; description?: string; price?: number | null; imageUrl?: string }
 type List = { slug: string; title: string; list_type: string; owner_name: string; items: Item[] }
 
 function GiftCard({ item }: { item: Item }) {
@@ -26,14 +28,93 @@ function GiftCard({ item }: { item: Item }) {
 }
 
 export function PublicListItems({ list }: { list: List }) {
+  const [buyerName, setBuyerName] = useState('')
+  const [nameSubmitted, setNameSubmitted] = useState(false)
+  const [claimedHere, setClaimedHere] = useState<string[]>([])
+  const [claimedByOthers, setClaimedByOthers] = useState<Record<string, string>>({})
+  const [error, setError] = useState('')
+  const [isPending, startTransition] = useTransition()
+  const supportsClaims = list.list_type === 'birthday' || list.list_type === 'christmas'
+
+  if (supportsClaims && !nameSubmitted) {
+    return <form onSubmit={(event) => { event.preventDefault(); if (buyerName.trim()) setNameSubmitted(true) }} className="mx-auto max-w-md rounded-xl border border-gray-200 p-5">
+      <h2 className="font-semibold text-gray-900">before you view the gifts</h2>
+      <p className="mt-1 text-sm text-gray-500">enter your name so everyone can see who claimed a gift</p>
+      <label htmlFor="buyer-name" className="mt-4 block text-sm text-gray-700">your name</label>
+      <input id="buyer-name" value={buyerName} onChange={(event) => setBuyerName(event.target.value)} required maxLength={60} className="mt-1 min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" />
+      <button className="mt-3 min-h-11 w-full rounded-lg bg-black px-4 text-sm font-medium text-white">view list</button>
+    </form>
+  }
+
   if (!list.items.length) return <p className="rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500">nothing on the list yet</p>
-  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{list.items.map((item) => <GiftCard key={item.id} item={item} />)}</div>
+
+  function claim(item: Item) {
+    setError('')
+    startTransition(async () => {
+      const result = await claimWishlistItem(list.slug, item.id, buyerName.trim())
+      if (result.error) {
+        setError(result.error)
+        if (result.claimedBy) setClaimedByOthers((current) => ({ ...current, [item.id]: result.claimedBy! }))
+      } else setClaimedHere((claimed) => [...claimed, item.id])
+    })
+  }
+
+  return <div className="space-y-4">
+    {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {list.items.map((item) => {
+        const claimed = Boolean(item.claimed_by || claimedHere.includes(item.id) || claimedByOthers[item.id])
+        const claimedByMe = claimedHere.includes(item.id)
+        return <div key={item.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <GiftCard item={item} />
+          {supportsClaims && <div className="border-t border-gray-100 p-3">
+            {claimed ? <div className="flex min-h-11 items-center gap-2 rounded-lg bg-gray-50 px-3 text-sm font-medium text-gray-700"><LockKeyhole aria-hidden="true" className="size-4" />{claimedByMe ? 'marked as bought by you' : `claimed by ${item.claimed_by || claimedByOthers[item.id] || 'someone'}`}</div> : <button onClick={() => claim(item)} disabled={isPending} className="min-h-11 w-full rounded-lg bg-black px-4 text-sm font-medium text-white disabled:opacity-50">{isPending ? 'saving...' : 'i bought this'}</button>}
+            {claimedByMe && item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-2 flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-700">open product</a>}
+          </div>}
+        </div>
+      })}
+    </div>
+  </div>
 }
 
 export function ManageList({ list, token }: { list: List; token: string }) {
   const [formOpen, setFormOpen] = useState(false)
   const [error, setError] = useState('')
+  const [productUrl, setProductUrl] = useState('')
+  const [itemName, setItemName] = useState('')
+  const [itemDescription, setItemDescription] = useState('')
+  const [itemPrice, setItemPrice] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [productMessage, setProductMessage] = useState('')
+  const [isFetchingProduct, setIsFetchingProduct] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  async function fetchProductDetails() {
+    if (!productUrl.trim()) return
+    setIsFetchingProduct(true)
+    setProductMessage('fetching product details...')
+    try {
+      const response = await fetch('/api/product-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: productUrl.trim() }),
+      })
+      const details = await response.json() as ProductPreview & { error?: string }
+      if (!response.ok) {
+        setProductMessage(details.error ?? 'Could not fetch details. You can enter them manually.')
+        return
+      }
+      setItemName(details.title ?? '')
+      setItemDescription(details.description ?? '')
+      setItemPrice(details.price == null ? '' : String(details.price))
+      setImageUrl(details.imageUrl ?? '')
+      setProductMessage('Details added. Check them before saving.')
+    } catch {
+      setProductMessage('Could not fetch details. You can enter them manually.')
+    } finally {
+      setIsFetchingProduct(false)
+    }
+  }
 
   function addItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -78,13 +159,15 @@ export function ManageList({ list, token }: { list: List; token: string }) {
         <button onClick={() => setFormOpen((open) => !open)} className="min-h-11 rounded-lg bg-black px-4 text-sm font-medium text-white hover:bg-gray-800">{formOpen ? 'cancel' : 'add item'}</button>
       </div>
       {formOpen && <form onSubmit={addItem} className="grid gap-3 rounded-xl border border-gray-200 p-4 sm:grid-cols-2">
-        <label className="text-sm text-gray-700">item name<input required name="name" maxLength={120} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
-        <label className="text-sm text-gray-700">price<input required name="price" type="number" min="0" step="0.01" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
-        <label className="text-sm text-gray-700 sm:col-span-2">description<input name="description" maxLength={500} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
-        <label className="text-sm text-gray-700">image URL<input name="imageUrl" type="url" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://" /></label>
-        <label className="text-sm text-gray-700">product URL<input name="url" type="url" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://" /></label>
+        <label className="text-sm text-gray-700 sm:col-span-2">amazon or ebay product URL<input name="url" type="url" value={productUrl} onChange={(event) => setProductUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://www.amazon.com/..." /></label>
+        <button type="button" onClick={() => void fetchProductDetails()} disabled={isFetchingProduct || !productUrl.trim()} className="min-h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-800 disabled:opacity-50 sm:col-span-2">{isFetchingProduct ? 'fetching details...' : 'fetch product details'}</button>
+        {productMessage && <p role="status" className="text-sm text-gray-500 sm:col-span-2">{productMessage}</p>}
+        <label className="text-sm text-gray-700">item name<input required name="name" value={itemName} onChange={(event) => setItemName(event.target.value)} maxLength={120} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
+        <label className="text-sm text-gray-700">price<input required name="price" value={itemPrice} onChange={(event) => setItemPrice(event.target.value)} type="number" min="0" step="0.01" className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
+        <label className="text-sm text-gray-700 sm:col-span-2">description<input name="description" value={itemDescription} onChange={(event) => setItemDescription(event.target.value)} maxLength={500} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" /></label>
+        <label className="text-sm text-gray-700 sm:col-span-2">image URL<input name="imageUrl" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base" placeholder="https://" /></label>
         {error && <p role="alert" className="text-sm text-red-600 sm:col-span-2">{error}</p>}
-        <button disabled={isPending} className="min-h-11 rounded-lg bg-black px-4 text-sm font-medium text-white disabled:opacity-50 sm:col-span-2">{isPending ? 'adding...' : 'add item'}</button>
+        <button disabled={isPending || isFetchingProduct} className="min-h-11 rounded-lg bg-black px-4 text-sm font-medium text-white disabled:opacity-50 sm:col-span-2">{isPending ? 'adding...' : 'add item'}</button>
       </form>}
       {error && !formOpen && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {!list.items.length ? <p className="rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500">your list is empty</p> : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

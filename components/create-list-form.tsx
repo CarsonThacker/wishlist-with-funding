@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createWishlistList, type ListKind } from '@/app/actions/lists'
+import { createWishlistList, verifyEarlyAccessCode, type ListKind } from '@/app/actions/lists'
 
 export function CreateListForm() {
+  const [accessCode, setAccessCode] = useState('')
+  const [accessGranted, setAccessGranted] = useState(false)
   const [ownerName, setOwnerName] = useState('')
   const [listKind, setListKind] = useState<ListKind>('wishlist')
   const [title, setTitle] = useState('')
@@ -12,11 +14,24 @@ export function CreateListForm() {
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  function submitCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    startTransition(async () => {
+      const valid = await verifyEarlyAccessCode(accessCode)
+      if (!valid) {
+        setError('That early access code is not valid.')
+        return
+      }
+      setAccessGranted(true)
+    })
+  }
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     startTransition(async () => {
-      const result = await createWishlistList({ ownerName, listKind, title })
+      const result = await createWishlistList({ ownerName, listKind, title, accessCode })
       if (result.error || !result.slug || !result.adminToken) {
         setError(result.error ?? 'Could not create your list.')
         return
@@ -33,6 +48,21 @@ export function CreateListForm() {
     if (!links) return
     await navigator.clipboard.writeText(links.share)
     setCopied(true)
+  }
+
+  if (!accessGranted) {
+    return (
+      <section className="rounded-xl border border-gray-200 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-gray-900">early access</h2>
+        <p className="mt-1 text-sm text-gray-500">enter your invite code to create a list</p>
+        <form onSubmit={submitCode} className="mt-5 space-y-3">
+          <label htmlFor="early-access-code" className="block text-sm text-gray-700">access code</label>
+          <input id="early-access-code" type="password" autoComplete="off" value={accessCode} onChange={(event) => setAccessCode(event.target.value)} required className="min-h-11 w-full rounded-lg border border-gray-200 px-3 text-base outline-none focus:border-gray-500" />
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          <button type="submit" disabled={isPending} className="min-h-11 w-full rounded-lg bg-black px-4 text-sm font-semibold text-white disabled:opacity-50">{isPending ? 'checking...' : 'continue'}</button>
+        </form>
+      </section>
+    )
   }
 
   return (
