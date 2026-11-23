@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getWishlistList } from '@/app/actions/lists'
+import { BrandMark } from '@/components/brand-mark'
 import { PublicListItems } from '@/components/list-items'
 
 export default async function SharedListPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -12,7 +13,7 @@ export default async function SharedListPage({ params }: { params: Promise<{ slu
 
   return <main className="min-h-screen bg-white px-5 py-12 sm:px-8">
     <div className="mx-auto max-w-5xl">
-      <a href="/" className="text-sm text-gray-500 hover:text-gray-900">all lists</a>
+      <BrandMark className="mb-5" />
       <header className="mb-8 mt-6 border-b border-gray-100 pb-6">
         <p className="text-sm text-gray-500">{list.owner_name}&apos;s {list.list_type === 'wishlist' ? 'wishlist' : `${list.list_type} list`}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{list.title}</h1>

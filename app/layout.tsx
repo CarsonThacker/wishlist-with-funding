@@ -6,8 +6,14 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: "wishlists",
-  description: "Create and share a wishlist, birthday list, or Christmas list.",
+  title: 'If You Ask',
+  description: 'Make a wishlist, birthday, or holiday list and share it by link. Lists are not shown in a public directory.',
+  icons: { icon: '/if-you-ask-logo.jpeg', apple: '/if-you-ask-logo.jpeg' },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
   generator: 'v0.app',
 }
 

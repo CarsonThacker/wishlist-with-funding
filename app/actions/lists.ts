@@ -85,19 +85,6 @@ export async function createWishlistList(formData: {
   return { slug, adminToken }
 }
 
-export async function getWishlistLists() {
-  const { data, error } = await createSupabaseAdmin()
-    .from('wishlist_lists')
-    .select('slug, title, list_type, owner_name, created_at')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('[v0] Could not load wishlist lists:', error.message)
-    return []
-  }
-  return data ?? []
-}
-
 export async function getWishlistList(slug: string) {
   const supabase = createSupabaseAdmin()
   const { data: list, error } = await supabase

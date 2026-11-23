@@ -1,30 +1,24 @@
-import { getWishlistLists } from '@/app/actions/lists'
+import { BrandMark } from '@/components/brand-mark'
 import { CreateListForm } from '@/components/create-list-form'
 
-const listTypeLabel = (type: string) => type === 'wishlist' ? 'wishlist' : `${type} list`
-
-export default async function HomePage() {
-  const lists = await getWishlistLists()
-
-  return <main className="min-h-screen bg-white px-5 py-12 sm:px-8">
-    <div className="mx-auto max-w-3xl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">wishlists</h1>
-        <p className="mt-2 text-sm text-gray-500">make a wishlist, birthday list, or christmas list and share it</p>
+export default function HomePage() {
+  return <main className="min-h-screen bg-[#fbfaf8] px-5 pb-10 pt-8 sm:px-8 sm:pt-14">
+    <div className="mx-auto max-w-xl">
+      <header className="mb-8 sm:mb-10">
+        <BrandMark />
+        <div className="mt-8 border-l-2 border-gray-950 pl-4 sm:mt-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">A little wish, shared by link</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-950 sm:text-5xl">Make it easy to ask.</h1>
+          <p className="mt-3 max-w-md text-base leading-7 text-gray-600">Keep your wishlist, birthday, or holiday ideas in one simple place.</p>
+        </div>
       </header>
 
       <CreateListForm />
 
-      <section className="mt-10">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">shared lists</h2>
-        {!lists.length ? <p className="rounded-xl border border-gray-200 p-6 text-sm text-gray-500">no lists yet. create the first one above.</p> : <div className="divide-y divide-gray-100 border-y border-gray-100">
-          {lists.map((list) => <a key={list.slug} href={`/list/${list.slug}`} className="flex min-h-16 items-center justify-between gap-4 py-3 hover:bg-gray-50">
-            <div className="min-w-0"><span className="block truncate font-medium text-gray-900">{list.title}</span><span className="mt-1 block text-xs text-gray-500">{list.owner_name} · {listTypeLabel(list.list_type)}</span></div>
-            <span className="shrink-0 text-sm text-gray-400">view</span>
-          </a>)}
-        </div>}
-      </section>
-      <footer className="mt-10 text-center text-xs text-gray-400">simple lists made to share</footer>
+      <footer className="mt-6 rounded-xl border border-gray-200/80 bg-white/70 px-4 py-3 text-sm leading-6 text-gray-600">
+        Lists don&apos;t appear in a public directory. Anyone with your link can view yours, so share it only with people you trust.
+      </footer>
+      <p className="mt-8 text-center text-xs font-medium uppercase tracking-[0.16em] text-gray-400">If You Ask</p>
     </div>
   </main>
 }
