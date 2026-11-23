@@ -6,8 +6,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: "Carson's Wishlist",
-  description: "Help Carson save up for the things he wants most.",
+  title: "wishlists",
+  description: "Create and share a wishlist, birthday list, or Christmas list.",
   generator: 'v0.app',
 }
 
